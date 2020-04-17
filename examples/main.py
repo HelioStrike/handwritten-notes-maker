@@ -1,6 +1,6 @@
 from handwritten_notes_maker import HandwrittenNotesMaker
 
-hnmaker = HandwrittenNotesMaker(left_margin=140, right_margin=40, top_margin=200, bottom_margin=40, line_space=120, papers_dir='./paper_images/blank', font_path='./fonts/1.ttf', human_error=4)
+hnmaker = HandwrittenNotesMaker(left_margin=140, right_margin=40, top_margin=200, bottom_margin=40, line_space=120, papers_dir='./paper_images/blank', font_path='./fonts/1.ttf', spacing_error=8, vertical_error=5)
 hnmaker.make_font("normal", 80)
 hnmaker.make_font("heading", 120)
 hnmaker.make_font("subheading", 80)
