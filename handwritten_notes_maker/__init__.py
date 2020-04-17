@@ -25,8 +25,8 @@ class HandwrittenNotesMaker():
         self.fonts = {}
         self.pages = []
         self.page_ptr = -1
-        self.top_ptr = self.top_margin
-        self.left_ptr = self.left_margin
+        self.top_ptr = 0
+        self.left_ptr = 0
         self.human_error = human_error
         self.draw = None
         self.to_next_page()
@@ -44,16 +44,16 @@ class HandwrittenNotesMaker():
         for index, letter in enumerate(text):
             if index == spaces[0]:
                 spaces.pop(0)
-            if((letter == "\n") or (self.left_ptr + self.draw.textsize(text[index:spaces[0]], self.fonts[font_name])[0] >= self.pages[self.page_ptr].size[0]-self.right_margin)):
+            if((letter == "\n") or (self.left_margin + self.left_ptr + self.draw.textsize(text[index:spaces[0]], self.fonts[font_name])[0] >= self.pages[self.page_ptr].size[0]-self.right_margin)):
                 self.insert_new_line()
-            if(self.top_ptr + self.draw.textsize(text[index:spaces[0]], self.fonts[font_name])[0] >= self.pages[self.page_ptr].size[1]-self.bottom_margin):
+            if(self.top_margin + self.top_ptr + self.draw.textsize(text[index:spaces[0]], self.fonts[font_name])[0] >= self.pages[self.page_ptr].size[1]-self.bottom_margin):
                 self.to_next_page()
             human = random.randint(0,self.human_error)
             add_sub = random.randint(0,1)
             if(add_sub == 0):
-                self.draw.text((self.left_ptr, self.top_ptr+human), letter, fill=(0,15,85,255), font=self.fonts[font_name])
+                self.draw.text((self.left_margin + self.left_ptr, self.top_margin + self.top_ptr + human), letter, fill=(0,15,85,255), font=self.fonts[font_name])
             else:
-                self.draw.text((self.left_ptr, self.top_ptr-human), letter, fill=(0,15,85,255), font=self.fonts[font_name])
+                self.draw.text((self.left_margin + self.left_ptr, self.top_margin + self.top_ptr - human), letter, fill=(0,15,85,255), font=self.fonts[font_name])
             self.left_ptr += self.draw.textsize(letter, self.fonts[font_name])[0]
 
 
@@ -64,7 +64,7 @@ class HandwrittenNotesMaker():
         if align == "center":
             self.left_ptr += (self.pages[self.page_ptr].width - self.left_margin - self.draw.textsize(text, self.fonts[font_name])[0])/2
         if align == "right":
-            self.left_ptr = self.pages[self.page_ptr].width - self.left_margin - self.right_margin - self.draw.textsize(text, self.fonts[font_name])[0]
+            self.left_ptr = self.pages[self.page_ptr].width - 2*self.left_margin - self.right_margin - self.draw.textsize(text, self.fonts[font_name])[0]
         self.write_text(font_name, text)
         self.insert_new_line()
 
@@ -90,7 +90,7 @@ class HandwrittenNotesMaker():
         
 
     def insert_vertical_space(self, space):
-        self.left_ptr = self.left_margin
+        self.left_ptr = 0
         self.top_ptr += space
         if self.top_ptr > self.pages[self.page_ptr].size[1] - self.bottom_margin:
             self.to_next_page()
