@@ -22,4 +22,4 @@ clone and install.
 git clone https://github.com/HelioStrike/handwritten-notes-maker
 cd handwritten-notes-maker
 sudo pip3 install .
-```# handwritten-notes-maker
+```
