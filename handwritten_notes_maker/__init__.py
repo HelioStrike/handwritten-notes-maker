@@ -79,7 +79,7 @@ class HandwrittenNotesMaker():
             
             self.left_ptr += spacing_offset
 
-            if space_width is not None and letter == '\n':
+            if space_width is not None and letter == ' ':
                 self.left_ptr += space_width
             else:
                 self.draw.text((self.left_margin + self.left_ptr, self.top_margin + self.top_ptr + vertical_offset), letter, fill=self.text_color, font=self.fonts[font_name])
