@@ -107,8 +107,7 @@ class HandwrittenNotesMaker():
         for index, letter in enumerate(text):
             if index == spaces[0]:
                 spaces.pop(0)
-            if((letter == "\n") or (self.left_margin + self.left_ptr + self.draw.textsize(text[index:spaces[0]], \
-                self.fonts[font_name])[0] >= self.cur_width-self.right_margin)):
+            if((letter == "\n") or (self.left_margin + self.left_ptr + self.draw.textsize(text[index:spaces[0]], self.fonts[font_name])[0] >= self.cur_width-self.right_margin)):
                 self.insert_new_line()
             if(self.top_margin + self.top_ptr + self.draw.textsize(text[index:spaces[0]], self.fonts[font_name])[1] >= self.cur_height-self.bottom_margin):
                 self.to_next_page()

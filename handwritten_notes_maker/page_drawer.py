@@ -1,6 +1,8 @@
 import numpy as np
 from .utils import *
-import time
+import re
+
+empty_chars = [' ', '\n', '\t']
 
 #Draws on an image using provided parameters
 #fill - color of ink used on the image
@@ -39,4 +41,17 @@ class PageDrawer():
         return page
 
     def textsize(self, text, font):
-        return imageFromText(text, font)[1][2:4]
+        front_spaces = 0
+        l = len(text)
+        while front_spaces < l and text[front_spaces] in empty_chars:
+            front_spaces += 1
+        if front_spaces == l:
+            return (self.space_width*len(text), 1)
+        else:
+            back_spaces = 0
+            while back_spaces > 0 and text[front_spaces] in empty_chars:
+                back_spaces -= 1
+            sz = imageFromText(text, font)[1][2:4]
+            if sz == (0, 0, 0, 0):
+                return (self.space_width, 1)
+            return ((front_spaces+back_spaces)*self.space_width + sz[0], sz[1])

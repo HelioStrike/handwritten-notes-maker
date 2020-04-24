@@ -8,6 +8,8 @@ def imageFromText(text, font, horizontal_padding=0, vertical_padding=0):
     draw = ImageDraw.Draw(im)
     draw.text((0, 0), text, font=font)
     bbox = im.getbbox()
+    if bbox == None:
+        return im, (0, 0, 0, 0)
     bbox = (max(0, bbox[0]-horizontal_padding), max(0, bbox[1]-vertical_padding), bbox[2]+2*horizontal_padding, bbox[3]+2*vertical_padding)
     im = im.crop(bbox)
     return im, bbox
