@@ -1,6 +1,7 @@
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 from threshold_image_maker import ThresholdImageMaker
+from .page_drawer import PageDrawer
 import cv2
 import random
 import os
@@ -10,7 +11,10 @@ page_dirs = ["left", "right"]
 aligns = ["left", "center", "right"]
 
 class HandwrittenNotesMaker():
-    def __init__(self, left_margin, right_margin, top_margin, bottom_margin, font_path, papers_dir, line_space=50, space_width=None, text_color=(0,15,85,255), page_dir="left", vertical_error=0, spacing_error=0):
+    def __init__(self, left_margin, right_margin, top_margin, bottom_margin, font_path, papers_dir, line_space=50, space_width=None, \
+        text_color=(0,15,85,255), page_dir="left", vertical_error=0, spacing_error=0, character_rotation_error=(0,0), character_scale_x_min=0.8, \
+        character_scale_y_min=0.8, character_padding_x=1, character_padding_y=2):
+        
         self.left_margin = left_margin
         self.right_margin = right_margin
         self.top_margin = top_margin
@@ -28,9 +32,16 @@ class HandwrittenNotesMaker():
         self.page_ptr = -1
         self.top_ptr = 0
         self.left_ptr = 0
+        self.cur_width = None
+        self.cur_height = None
         self.vertical_error = vertical_error
         self.spacing_error = spacing_error
-        self.draw = None
+        self.character_rotation_error = character_rotation_error
+        self.character_scale_x_min = character_scale_x_min
+        self.character_scale_y_min = character_scale_y_min
+        self.character_padding_x = character_padding_x
+        self.character_padding_y = character_padding_y
+        self.draw = PageDrawer(fill=text_color, space_width=space_width, character_padding_x=character_padding_x, character_padding_y=character_padding_y)
         self.to_next_page()
 
     def set_page_dir(self, page_dir):
@@ -54,7 +65,7 @@ class HandwrittenNotesMaker():
         self.fonts[name] = ImageFont.truetype(font_path, size)
 
     #writes text to the page using a declared style
-    def write_text(self, font_name, text, space_width=None, vertical_error=None, spacing_error=None):
+    def write_text(self, font_name, text, space_width=None, vertical_error=None, spacing_error=None, new_line=False):
         assert font_name in self.fonts.keys(), "font_name wasn't created yet."
         
         if space_width is None:
@@ -69,9 +80,10 @@ class HandwrittenNotesMaker():
         for index, letter in enumerate(text):
             if index == spaces[0]:
                 spaces.pop(0)
-            if((letter == "\n") or (self.left_margin + self.left_ptr + self.draw.textsize(text[index:spaces[0]], self.fonts[font_name])[0] >= self.pages[self.page_ptr].size[0]-self.right_margin)):
+            if((letter == "\n") or (self.left_margin + self.left_ptr + self.draw.textsize(text[index:spaces[0]], \
+                self.fonts[font_name])[0] >= self.cur_width-self.right_margin)):
                 self.insert_new_line()
-            if(self.top_margin + self.top_ptr + self.draw.textsize(text[index:spaces[0]], self.fonts[font_name])[0] >= self.pages[self.page_ptr].size[1]-self.bottom_margin):
+            if(self.top_margin + self.top_ptr + self.draw.textsize(text[index:spaces[0]], self.fonts[font_name])[1] >= self.cur_height-self.bottom_margin):
                 self.to_next_page()
             
             vertical_offset = random.randint(-self.vertical_error, self.vertical_error)
@@ -82,23 +94,28 @@ class HandwrittenNotesMaker():
             if space_width is not None and letter == ' ':
                 self.left_ptr += space_width
             else:
-                self.draw.text((self.left_margin + self.left_ptr, self.top_margin + self.top_ptr + vertical_offset), letter, fill=self.text_color, font=self.fonts[font_name])
-            self.left_ptr += self.draw.textsize(letter, self.fonts[font_name])[0]
+                self.pages[self.page_ptr] = self.draw.text(self.pages[self.page_ptr], self.top_margin + self.top_ptr + vertical_offset, self.left_margin + self.left_ptr, \
+                    letter, font=self.fonts[font_name], rotation=random.uniform(self.character_rotation_error[0],self.character_rotation_error[1]), \
+                    scale_x=random.uniform(self.character_scale_x_min, 1), scale_y=random.uniform(self.character_scale_y_min, 1))
+                self.left_ptr += self.draw.textsize(letter, self.fonts[font_name])[0]
+        if new_line:
+            self.insert_new_line()
 
     #writes text on a new line, and then adds a new line
-    def write_heading(self, font_name, text, align="center"):
+    def write_heading(self, font_name, text, align="center", new_line=False):
         assert font_name in self.fonts.keys(), "font_name wasn't created yet."
         self.insert_new_line()
         assert align in aligns, "Invalid align value."
         if align == "center":
-            self.left_ptr += (self.pages[self.page_ptr].width - self.left_margin - self.draw.textsize(text, self.fonts[font_name])[0])/2
+            self.left_ptr += (self.cur_width - self.left_margin - self.draw.textsize(text, self.fonts[font_name])[0])/2
         if align == "right":
-            self.left_ptr = self.pages[self.page_ptr].width - 2*self.left_margin - self.right_margin - self.draw.textsize(text, self.fonts[font_name])[0]
+            self.left_ptr = self.cur_width - self.left_margin - self.right_margin - self.draw.textsize(text, self.fonts[font_name])[0] - self.space_width*len(text.split(' '))
         self.write_text(font_name, text)
-        self.insert_new_line()
+        if new_line:
+            self.insert_new_line()
 
     #inserts image, center aligns it, padding it with 2 new lines
-    def insert_image(self, impath, dims=(300, 300)):
+    def insert_image(self, impath, dims=(300, 300), new_line=False):
         assert dims is None or len(dims) == 2, "dims should be an tuple of size 2, or None."
 
         imaker = ThresholdImageMaker()
@@ -108,21 +125,20 @@ class HandwrittenNotesMaker():
             img = cv2.resize(img, dims)
 
         self.insert_new_line()
-        if self.top_ptr + len(img) > self.pages[self.page_ptr].height - self.bottom_margin:
+        if self.top_ptr + len(img) > self.cur_height - self.bottom_margin:
             self.to_next_page()
-        self.left_ptr = int((self.pages[self.page_ptr].width - self.left_margin - len(img[0]))/2)
+        self.left_ptr = int((self.cur_width - self.left_margin - len(img[0]))/2)
 
-        page = np.array(self.pages[self.page_ptr])
-        page[list(np.array([[self.top_ptr],[self.left_ptr]]) + np.where(img == 0))] = self.text_color[:3]
-        self.pages[self.page_ptr] = Image.fromarray(page, 'RGB')
-
-        self.insert_new_line()
+        self.pages[self.page_ptr] = self.draw.image(self.pages[self.page_ptr], self.top_ptr, self.left_ptr, img, searchColor=0)
+        self.top_ptr += len(img)
+        if new_line:
+            self.insert_new_line()
         
     #self-explanatory
     def insert_vertical_space(self, space):
         self.left_ptr = 0
         self.top_ptr += space
-        if self.top_ptr > self.pages[self.page_ptr].size[1] - self.bottom_margin:
+        if self.top_ptr > self.cur_height - self.bottom_margin:
             self.to_next_page()
 
     #inserts vertical space of size line_space
@@ -137,17 +153,19 @@ class HandwrittenNotesMaker():
             self.page_dir == page_dirs[1]
         else:
             self.page_dir == page_dirs[0]
-        self.pages.append(Image.open(os.path.join(dir_path, random.choice(os.listdir(dir_path)))))
+        self.pages.append(np.array(Image.open(os.path.join(dir_path, random.choice(os.listdir(dir_path))))))
 
     #moves to next page, if there is no next page, a new page is created
     def to_next_page(self):
         if self.page_ptr == len(self.pages)-1:
             self.insert_new_page()
+        self.cur_width = self.pages[self.page_ptr].shape[1]
+        self.cur_height = self.pages[self.page_ptr].shape[0]
         self.page_ptr += 1
         self.left_ptr = 0
         self.top_ptr = 0
-        self.draw = ImageDraw.Draw(self.pages[self.page_ptr])
 
     #save pages to pdf
     def save_to_pdf(self, to_path):
-        self.pages[0].save(to_path, "PDF" ,resolution=100.0, save_all=True, append_images=self.pages[1:])
+        pages = list(map(lambda page: Image.fromarray(page, 'RGB'), self.pages))
+        pages[0].save(to_path, "PDF" ,resolution=100.0, save_all=True, append_images=pages[1:])
