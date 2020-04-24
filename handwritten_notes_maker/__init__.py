@@ -10,6 +10,18 @@ import io
 page_dirs = ["left", "right"]
 aligns = ["left", "center", "right"]
 
+#Lets you create handwritten notes and save it to pdf
+
+#line_space - space between 2 lines
+#space_width - width of ' ' character
+#text_color - color of ink printed on to the pdf
+#page_dir - begin with left or right paper
+#vertical_error - maximum value by which each character is offset
+#spacing_error - space error between 2 characters
+#character_rotation_error - each character is rotated by some value between these 2 numbers
+#character_scale_x_min - each charaacter is scaled along x by atleast this value
+#character_padding_x - each character is padded along x with this value
+#character_padding_y - each character is padded along y with this value
 class HandwrittenNotesMaker():
     def __init__(self, left_margin, right_margin, top_margin, bottom_margin, font_path, papers_dir, line_space=50, space_width=None, \
         text_color=(0,15,85,255), page_dir="left", vertical_error=0, spacing_error=0, character_rotation_error=(0,0), character_scale_x_min=0.8, \
@@ -57,6 +69,21 @@ class HandwrittenNotesMaker():
 
     def set_spaciing_error(self, spacing_error):
         self.spacing_error = spacing_error
+
+    def set_character_rotation_error(self, character_rotation_error):
+        self.character_rotation_error = character_rotation_error
+
+    def set_character_scale_x_min(self, character_scale_x_min):
+        self.character_scale_x_min = character_scale_x_min
+
+    def set_character_scale_y_min(self, character_scale_y_min):
+        self.character_scale_y_min = character_scale_y_min
+
+    def set_character_padding_x(self, character_padding_x):
+        self.character_padding_x = character_padding_x
+
+    def set_character_padding_y(self, character_padding_y):
+        self.character_padding_y = character_padding_y
 
     #creates font of given size and style
     def make_font(self, name, size, font_path=None):

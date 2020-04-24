@@ -2,6 +2,11 @@ import numpy as np
 from .utils import *
 import time
 
+#Draws on an image using provided parameters
+#fill - color of ink used on the image
+#space_width - width of ' ' character
+#character_padding_x - each character is padded along x with this value
+#character_padding_y - each character is padded along y with this value
 class PageDrawer():
     def __init__(self, fill, space_width, character_padding_x, character_padding_y):
         self.fill = fill
